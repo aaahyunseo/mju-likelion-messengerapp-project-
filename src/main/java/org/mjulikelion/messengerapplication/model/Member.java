@@ -24,9 +24,7 @@ public class Member extends BaseEntity{
     private String password;    //비밀번호
 
     @OneToMany(mappedBy = "sender", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    private List<Message> message;    //해당 멤버의 메세지 목록
+    private List<Message> messages;    //발신 메세지
     @OneToMany(mappedBy = "sender", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    private List<Comment> comment;    //해당 멤버의 답장 목록
-    @OneToMany(mappedBy = "recipient", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    private List<MemberMessage> memberMessages;
+    private List<MemberMessage> memberMessages; //보낸 메시지 목록
 }

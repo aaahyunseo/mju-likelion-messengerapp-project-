@@ -7,8 +7,8 @@ import org.springframework.http.HttpStatusCode;
 @Getter
 @AllArgsConstructor
 public class ResponseDto<T> {
-    private final String message;   //요청 결과 메세지
     private final String httpStatusCode;    //http 상태 코드
+    private final String message;   //요청 결과 메세지
     private final T data;   //요청 결과 반환 데이터
 
     //반환 데이터가 없는 경우

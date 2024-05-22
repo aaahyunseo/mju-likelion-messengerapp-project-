@@ -5,6 +5,7 @@ import lombok.*;
 import lombok.experimental.SuperBuilder;
 
 import java.util.List;
+import java.util.UUID;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -14,17 +15,17 @@ import java.util.List;
 @Entity(name = "message")
 public class Message extends BaseEntity{
     @Setter
-    @Column(length = 300, nullable = false)
+    @Column(length = 500, nullable = false)
     private String content;     //메세지 내용
     @Setter
     @Column(nullable = false)
     private boolean readMessage;   //메시지 열람여부
+    @Setter
+    @Column(nullable = false)
+    private UUID recipient;     //수신자
 
     @ManyToOne(optional = false, fetch = FetchType.LAZY)
-    private Member sender;      //발신자
-
+    private Member sender;      //해당 메시지를 보낸 멤버(발신자)
     @OneToMany(mappedBy = "message", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    private List<Comment> comment;    //해당 메세지에 작성된 답장
-    @OneToMany(mappedBy = "message", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    private List<MemberMessage> memberMessage;
+    private List<MemberMessage> memberMessages;     //메시지 전체 목록
 }

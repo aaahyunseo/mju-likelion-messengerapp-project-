@@ -6,7 +6,6 @@ import org.mjulikelion.messengerapplication.annotation.AuthenticatedMember;
 import org.mjulikelion.messengerapplication.dto.request.CommentDto;
 import org.mjulikelion.messengerapplication.dto.request.UpdateMessageDto;
 import org.mjulikelion.messengerapplication.dto.request.WriteMessageDto;
-import org.mjulikelion.messengerapplication.dto.response.CommentListData;
 import org.mjulikelion.messengerapplication.dto.response.MessageListData;
 import org.mjulikelion.messengerapplication.dto.response.MessageResponseData;
 import org.mjulikelion.messengerapplication.dto.response.ResponseDto;
@@ -34,8 +33,8 @@ public class MessageController {
 
     //메시지 조회
     @GetMapping("/{id}")
-    private ResponseEntity<ResponseDto<MessageResponseData>> getMessageList(@AuthenticatedMember Member recipient, @PathVariable("id") UUID id){
-        MessageResponseData messageResponseData = messageService.getMessage(recipient, id);
+    private ResponseEntity<ResponseDto<MessageResponseData>> getMessageById(@AuthenticatedMember Member recipient, @PathVariable("id") UUID id){
+        MessageResponseData messageResponseData = messageService.getMessageById(recipient, id);
         return new ResponseEntity<>(ResponseDto.res(HttpStatus.OK, "메시지를 조회합니다.", messageResponseData),HttpStatus.OK);
     }
 
@@ -48,16 +47,16 @@ public class MessageController {
 
     //메시지 수정
     @PatchMapping("/{id}")
-    private ResponseEntity<ResponseDto<Void>> updateMessage(@AuthenticatedMember Member sender
+    private ResponseEntity<ResponseDto<Void>> updateMessageById(@AuthenticatedMember Member sender
             ,@RequestBody @Valid UpdateMessageDto updateMessageDto, @PathVariable("id") UUID id){
-        messageService.updateMessage(sender, updateMessageDto, id);
+        messageService.updateMessageById(sender, updateMessageDto, id);
         return new ResponseEntity<>(ResponseDto.res(HttpStatus.OK,"메시지가 수정되었습니다."), HttpStatus.OK);
     }
 
     //메시지 삭제
     @DeleteMapping("/{id}")
-    private ResponseEntity<ResponseDto<Void>> deleteMessage(@AuthenticatedMember Member sender, @PathVariable("id") UUID id){
-        messageService.deleteMessage(sender, id);
+    private ResponseEntity<ResponseDto<Void>> deleteMessageById(@AuthenticatedMember Member sender, @PathVariable("id") UUID id){
+        messageService.deleteMessageById(sender, id);
         return new ResponseEntity<>(ResponseDto.res(HttpStatus.OK,"메시지가 삭제되었습니다."), HttpStatus.OK);
     }
 
@@ -67,12 +66,5 @@ public class MessageController {
             , @RequestBody @Valid CommentDto commentDto, @PathVariable("id") UUID id){
         messageService.writeComment(sender, commentDto, id);
         return new ResponseEntity<>(ResponseDto.res(HttpStatus.CREATED,"답장 완료하였습니다."), HttpStatus.CREATED);
-    }
-
-    //답장 목록 전체 조회
-    @GetMapping("/{id}/comment")
-    private ResponseEntity<ResponseDto<CommentListData>> getCommentList(@AuthenticatedMember Member recipient, @PathVariable("id") UUID id){
-        CommentListData commentListData = messageService.getCommentList(recipient, id);
-        return new ResponseEntity<>(ResponseDto.res(HttpStatus.OK, "메시지 목록을 조회합니다.", commentListData),HttpStatus.OK);
     }
 }

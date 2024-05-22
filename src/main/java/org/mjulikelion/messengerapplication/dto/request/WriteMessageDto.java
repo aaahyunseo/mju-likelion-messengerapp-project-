@@ -13,5 +13,5 @@ public class WriteMessageDto {
     @Size(min = 1, max = 100)
     private String content; //메시지 내용
     @NotEmpty(message = "수신자 목록이 누락되었습니다.")
-    private List<String> recipients;  //수신자
+    private List<String> recipients;  //수신자 목록
 }
