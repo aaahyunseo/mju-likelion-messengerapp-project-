@@ -32,17 +32,17 @@ public class MessageService {
 
     //메시지 목록 전체 조회 - 발신자, 메시지ID, 전송시간, 읽음여부
     public MessageListResponseData getMessageList(Member recipient){
-        List<MessageDto> list = memberMessageRepository.findAllByRecipient(recipient).stream()
+        List<MessageDto> memos = messageRepository.findAllByRecipient(recipient).stream()
                 //중간 연산 - MessageDto 형식으로 변환
                 .map(memberMessage -> MessageDto.builder()
                         .sender(memberMessage.getSender().getName())
-                        .messageId(memberMessage.getMessage().getId())
-                        .time(memberMessage.getMessage().getCreatedAt())
-                        .readMessage(memberMessage.getMessage().isReadMessage())
+                        .messageId(memberMessage.getId())
+                        .time(memberMessage.getCreatedAt())
+                        .readMessage(memberMessage.isReadMessage())
                         .build())
                 //최종 연산 - 스트림 요소를 수집하여 컬렉션에 담아서 반환
                 .collect(Collectors.toList());
-        MessageListResponseData messageListData = MessageListResponseData.builder().messageList(list).build();
+        MessageListResponseData messageListData = MessageListResponseData.builder().messageList(memos).build();
         return messageListData;
     }
 
@@ -82,8 +82,7 @@ public class MessageService {
 
                 MemberMessage memberMessage = MemberMessage.builder()
                         .message(newMessage)
-                        .sender(sender)
-                        .recipient(recipient)
+                        .member(recipient)
                         .chat(newMessage.getId())
                         .build();
                 memberMessageRepository.save(memberMessage);
@@ -138,8 +137,7 @@ public class MessageService {
 
         MemberMessage memberMessage = MemberMessage.builder()
                 .message(comment)
-                .sender(sender)
-                .recipient(chat.getSender())
+                .member(chat.getSender())
                 .chat(chat.getId())
                 .build();
         memberMessageRepository.save(memberMessage);
@@ -163,8 +161,7 @@ public class MessageService {
 
     //메시지 발신자가 맞는지 확인하기
     public boolean checkSender(Member sender, UUID id){
-        Message message = messageRepository.findMessageById(id);
-        if(memberMessageRepository.existsBySenderAndMessage(sender, message)){
+        if(messageRepository.existsBySenderAndId(sender, id)){
             return true;
         }
         throw new ForbiddenException(ErrorCode.NO_ACCESS,"메시지 접근 권한이 없습니다.");
@@ -172,8 +169,7 @@ public class MessageService {
 
     //메시지 수신자가 맞는지 확인하기
     public boolean checkRecipient(Member recipient, UUID id){
-        Message message = messageRepository.findMessageById(id);
-        if(memberMessageRepository.existsByRecipientAndMessage(recipient, message)){
+        if(messageRepository.existsByRecipientAndId(recipient, id)){
             return true;
         }
         throw new ForbiddenException(ErrorCode.NO_ACCESS,"메시지 접근 권한이 없습니다.");

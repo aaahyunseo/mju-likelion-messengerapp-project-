@@ -26,8 +26,6 @@ public class Member extends BaseEntity{
     private List<Message> sendMessages;    //발신 메세지
     @OneToMany(mappedBy = "recipient", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<Message> receiveMessages;    //수신 메세지
-    @OneToMany(mappedBy = "sender", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    private List<MemberMessage> senderMemberMessages; //보낸 메시지 목록
-    @OneToMany(mappedBy = "recipient", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    private List<MemberMessage> recipientMemberMessages; //받은 메시지 목록
+    @OneToMany(mappedBy = "member", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private List<MemberMessage> MemberMessages; //메시지 목록
 }

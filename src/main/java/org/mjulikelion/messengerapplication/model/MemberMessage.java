@@ -18,11 +18,8 @@ public class MemberMessage extends BaseEntity{
     private UUID chat;          //어떤 메시지에 대한 답장인지
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "sender_id")
-    private Member sender;     // 발신자
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "recipient_id")
-    private Member recipient;     // 수신자
+    @JoinColumn(name = "member_id")
+    private Member member;     // 메시지를 받은 멤버
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "message_id")
     private Message message;    //메시지 정보
