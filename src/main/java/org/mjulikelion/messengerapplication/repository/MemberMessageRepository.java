@@ -11,7 +11,7 @@ import java.util.UUID;
 
 @Repository
 public interface MemberMessageRepository extends JpaRepository<MemberMessage, UUID> {
-    List<MemberMessage> findAllByRecipient(UUID recipient);         //수신자의 메시지 목록 전제 반환
+    List<MemberMessage> findAllByRecipient(Member recipient);         //수신자의 메시지 목록 전제 반환
     boolean existsBySenderAndMessage(Member sender, Message message); //메시지와 발신자가 일치하는지 확인하기
-    boolean existsByRecipientAndMessage(UUID recipient, Message message); //메시지와 수신자가 일치하는지 확인하기
+    boolean existsByRecipientAndMessage(Member recipient, Message message); //메시지와 수신자가 일치하는지 확인하기
 }

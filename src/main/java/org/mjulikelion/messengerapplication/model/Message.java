@@ -20,12 +20,13 @@ public class Message extends BaseEntity{
     @Setter
     @Column(nullable = false)
     private boolean readMessage;   //메시지 열람여부
-    @Setter
-    @Column(nullable = false)
-    private UUID recipient;     //수신자
 
-    @ManyToOne(optional = false, fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "sender_id")
     private Member sender;      //해당 메시지를 보낸 멤버(발신자)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "recipient_id")
+    private Member recipient;      //해당 메시지를 받은 멤버(수신자)
     @OneToMany(mappedBy = "message", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<MemberMessage> memberMessages;     //메시지 전체 목록
 }
