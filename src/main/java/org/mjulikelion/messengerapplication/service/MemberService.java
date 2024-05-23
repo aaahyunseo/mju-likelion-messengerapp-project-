@@ -1,8 +1,10 @@
 package org.mjulikelion.messengerapplication.service;
 
 import lombok.AllArgsConstructor;
+import org.mjulikelion.messengerapplication.dto.request.DeleteMemberDto;
 import org.mjulikelion.messengerapplication.dto.request.JoinDto;
 import org.mjulikelion.messengerapplication.dto.request.LoginDto;
+import org.mjulikelion.messengerapplication.dto.request.UpdateMemberDto;
 import org.mjulikelion.messengerapplication.encryption.PasswordHashEncryption;
 import org.mjulikelion.messengerapplication.exception.AlreadyExistException;
 import org.mjulikelion.messengerapplication.exception.ForbiddenException;
@@ -36,8 +38,22 @@ public class MemberService {
     }
 
     //회원탈퇴
-    public void deleteMember(Member member){
+    public void deleteMember(Member member, DeleteMemberDto deleteMemberDto){
+        //비밀번호 일치 여부 확인
+        checkPassword(deleteMemberDto.getPassword(), member.getPassword());
         memberRepository.delete(member);
+    }
+
+    //회원정보 수정
+    public void updateMember(Member member, UpdateMemberDto updateMemberDto){
+        //비밀번호 일치 여부 확인
+        checkPassword(updateMemberDto.getPassword(), member.getPassword());
+        Member updateMember = memberRepository.findMemberById(member.getId());
+        updateMember.setName(updateMemberDto.getName());
+        //비밀번호 암호화
+        String encryptionPassword = passwordHashEncryption.encrypt(updateMemberDto.getNewPassword());
+        updateMember.setPassword(encryptionPassword);
+        memberRepository.save(updateMember);
     }
 
     //로그인
@@ -52,5 +68,12 @@ public class MemberService {
             throw new ForbiddenException(ErrorCode.LOGIN_FALSE,"비밀번호 인증에 실패하였습니다.");
         }
         throw new ForbiddenException(ErrorCode.LOGIN_FALSE,"이메일 인증에 실패하였습니다.");
+    }
+
+    //비밀번호 일치 여부 확인
+    public boolean checkPassword(String plainPassword, String hashedPassword){
+        if(passwordHashEncryption.matches(plainPassword, hashedPassword)){
+            return true;
+        }throw new ForbiddenException(ErrorCode.NO_ACCESS, "비밀번호 정보가 일치하지 않습니다.");
     }
 }

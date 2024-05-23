@@ -8,7 +8,7 @@ import java.util.UUID;
 
 @Getter
 @Builder
-public class MessageAllResponseDto {
+public class MessageDto {
     private UUID messageId;    //메시지 id
     private String sender;  //수신자 이름
     private LocalDateTime time; //보낸 시간

@@ -7,6 +7,6 @@ import java.util.List;
 
 @Getter
 @Builder
-public class MessageListData {
-    private List<MessageAllResponseDto> messageList;
+public class MessageListResponseData {
+    private List<MessageDto> messageList;
 }

@@ -17,9 +17,9 @@ import org.mjulikelion.messengerapplication.repository.MemberRepository;
 import org.mjulikelion.messengerapplication.repository.MessageRepository;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -31,19 +31,18 @@ public class MessageService {
     private final MemberMessageRepository memberMessageRepository;
 
     //메시지 목록 전체 조회 - 발신자, 메시지ID, 전송시간, 읽음여부
-    public MessageListData getMessageList(Member recipient){
-        List<MemberMessage> messages = memberMessageRepository.findAllByRecipient(recipient.getId());
-        List<MessageAllResponseDto> list = new ArrayList<>();
-        for(MemberMessage memberMessage : messages){
-            MessageAllResponseDto messageAllResponseDto = MessageAllResponseDto.builder()
-                    .sender(memberMessage.getSender().getName())
-                    .messageId(memberMessage.getMessage().getId())
-                    .time(memberMessage.getMessage().getCreatedAt())
-                    .readMessage(memberMessage.getMessage().isReadMessage())
-                    .build();
-            list.add(messageAllResponseDto);
-        }
-        MessageListData messageListData = MessageListData.builder().messageList(list).build();
+    public MessageListResponseData getMessageList(Member recipient){
+        List<MessageDto> list = memberMessageRepository.findAllByRecipient(recipient.getId()).stream()
+                //중간 연산 - MessageDto 형식으로 변환
+                .map(memberMessage -> MessageDto.builder()
+                        .sender(memberMessage.getSender().getName())
+                        .messageId(memberMessage.getMessage().getId())
+                        .time(memberMessage.getMessage().getCreatedAt())
+                        .readMessage(memberMessage.getMessage().isReadMessage())
+                        .build())
+                //최종 연산 - 스트림 요소를 수집하여 컬렉션에 담아서 반환
+                .collect(Collectors.toList());
+        MessageListResponseData messageListData = MessageListResponseData.builder().messageList(list).build();
         return messageListData;
     }
 
@@ -65,26 +64,30 @@ public class MessageService {
     //메시지 작성 - 여러 명의 수신자가 있을 수 있음. 리스트로 받음.
     public void writeMessage(Member sender, WriteMessageDto writeMessageDto){
         List<String> recipients = writeMessageDto.getRecipients();
-        for(String name: recipients){
-            existsRecipient(memberRepository.findMemberByName(name));
-            Member recipient = memberRepository.findMemberByName(name);
+        recipients.stream()
+                //중간연산 - 수신자 이름 존재 여부 확인 후 이름에 맞는 멤버 반환
+            .map(name -> {
+                existsRecipient(memberRepository.findMemberByName(name));
+                return memberRepository.findMemberByName(name);
+            })
+                //최종연산 - 각 요소에 지정된 작업 수행
+            .forEach(recipient -> {
+                Message newMessage = Message.builder()
+                        .content(writeMessageDto.getContent())
+                        .sender(sender)
+                        .recipient(recipient.getId())
+                        .readMessage(false)
+                        .build();
+                messageRepository.save(newMessage);
 
-            Message newMessage = Message.builder()
-                    .content(writeMessageDto.getContent())
-                    .sender(sender)
-                    .recipient(recipient.getId())
-                    .readMessage(false)
-                    .build();
-            messageRepository.save(newMessage);
-
-            MemberMessage memberMessage = MemberMessage.builder()
-                    .message(newMessage)
-                    .sender(sender)
-                    .recipient(recipient.getId())
-                    .chat(newMessage.getId())
-                    .build();
-            memberMessageRepository.save(memberMessage);
-        }
+                MemberMessage memberMessage = MemberMessage.builder()
+                        .message(newMessage)
+                        .sender(sender)
+                        .recipient(recipient.getId())
+                        .chat(newMessage.getId())
+                        .build();
+                memberMessageRepository.save(memberMessage);
+            });
     }
 
     //메시지 수정
@@ -101,8 +104,8 @@ public class MessageService {
         } throw new ForbiddenException(ErrorCode.NO_ACCESS,"수신자가 메시지를 읽어 수정할 수 없습니다.");
     }
 
-    //메시지 삭제
-    public void deleteMessageById(Member sender, UUID id){
+    //메시지 삭제 - 발신자가 삭제
+    public void deleteMessageBySender(Member sender, UUID id){
         existsMessage(id);  //ID에 해당하는 메시지가 존재하는지
         checkSender(sender, id);    //발신자와 메시지가 일치하는지
         Message message = messageRepository.findMessageById(id);
@@ -111,6 +114,13 @@ public class MessageService {
             messageRepository.deleteById(id);
             return;
         } throw new ForbiddenException(ErrorCode.NO_ACCESS,"수신자가 메시지를 읽어 삭제할 수 없습니다.");
+    }
+
+    //메시지 삭제 - 수신자가 삭제
+    public void deleteMessageByRecipient(Member recipient, UUID id){
+        existsMessage(id);  //ID에 해당하는 메시지가 존재하는지
+        checkRecipient(recipient, id);  //수신자와 메시지가 일치하는지
+        messageRepository.deleteById(id);
     }
 
     //답장 작성

@@ -6,7 +6,7 @@ import org.mjulikelion.messengerapplication.annotation.AuthenticatedMember;
 import org.mjulikelion.messengerapplication.dto.request.CommentDto;
 import org.mjulikelion.messengerapplication.dto.request.UpdateMessageDto;
 import org.mjulikelion.messengerapplication.dto.request.WriteMessageDto;
-import org.mjulikelion.messengerapplication.dto.response.MessageListData;
+import org.mjulikelion.messengerapplication.dto.response.MessageListResponseData;
 import org.mjulikelion.messengerapplication.dto.response.MessageResponseData;
 import org.mjulikelion.messengerapplication.dto.response.ResponseDto;
 import org.mjulikelion.messengerapplication.model.Member;
@@ -26,8 +26,8 @@ public class MessageController {
 
     //메시지 목록 전체 조회
     @GetMapping
-    private ResponseEntity<ResponseDto<MessageListData>> getMessageList(@AuthenticatedMember Member recipient){
-        MessageListData messageListData = messageService.getMessageList(recipient);
+    private ResponseEntity<ResponseDto<MessageListResponseData>> getMessageList(@AuthenticatedMember Member recipient){
+        MessageListResponseData messageListData = messageService.getMessageList(recipient);
         return new ResponseEntity<>(ResponseDto.res(HttpStatus.OK, "메시지 목록을 조회합니다.", messageListData),HttpStatus.OK);
     }
 
@@ -53,11 +53,18 @@ public class MessageController {
         return new ResponseEntity<>(ResponseDto.res(HttpStatus.OK,"메시지가 수정되었습니다."), HttpStatus.OK);
     }
 
-    //메시지 삭제
+    //발신자가 메시지 삭제
     @DeleteMapping("/{id}")
-    private ResponseEntity<ResponseDto<Void>> deleteMessageById(@AuthenticatedMember Member sender, @PathVariable("id") UUID id){
-        messageService.deleteMessageById(sender, id);
-        return new ResponseEntity<>(ResponseDto.res(HttpStatus.OK,"메시지가 삭제되었습니다."), HttpStatus.OK);
+    private ResponseEntity<ResponseDto<Void>> deleteMessageBySender(@AuthenticatedMember Member sender, @PathVariable("id") UUID id){
+        messageService.deleteMessageBySender(sender, id);
+        return new ResponseEntity<>(ResponseDto.res(HttpStatus.OK,"보낸 메시지가 삭제되었습니다."), HttpStatus.OK);
+    }
+
+    //수신자가 메시지 삭제
+    @DeleteMapping("/{id}/delete")
+    private ResponseEntity<ResponseDto<Void>> deleteMessageByRecipient(@AuthenticatedMember Member recipient, @PathVariable("id") UUID id){
+        messageService.deleteMessageByRecipient(recipient, id);
+        return new ResponseEntity<>(ResponseDto.res(HttpStatus.OK,"받은 메시지가 삭제되었습니다."), HttpStatus.OK);
     }
 
     //답장쓰기
