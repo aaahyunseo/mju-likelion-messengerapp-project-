@@ -32,13 +32,13 @@ public class MessageService {
 
     //메시지 목록 전체 조회 - 발신자, 메시지ID, 전송시간, 읽음여부
     public MessageListResponseData getMessageList(Member recipient){
-        List<MessageDto> memos = messageRepository.findAllByRecipient(recipient).stream()
+        List<MessageDto> memos = memberMessageRepository.findAllByRecipient(recipient).stream()
                 //중간 연산 - MessageDto 형식으로 변환
                 .map(memberMessage -> MessageDto.builder()
                         .sender(memberMessage.getSender().getName())
-                        .messageId(memberMessage.getId())
+                        .messageId(memberMessage.getMessage().getId())
                         .time(memberMessage.getCreatedAt())
-                        .readMessage(memberMessage.isReadMessage())
+                        .readMessage(memberMessage.getMessage().isReadMessage())
                         .build())
                 //최종 연산 - 스트림 요소를 수집하여 컬렉션에 담아서 반환
                 .collect(Collectors.toList());
@@ -49,10 +49,11 @@ public class MessageService {
     //특정 메시지 조회하기 - 발신자, 문자내용, 전송시간
     public MessageResponseData getMessageById(Member recipient, UUID id){
         existsMessage(id);
-        checkRecipient(recipient, id);
         Message message = messageRepository.findMessageById(id);
+        checkRecipient(recipient, message);
+        MemberMessage memberMessage = memberMessageRepository.findMemberMessageByMessage(message);
         MessageResponseData messageResponseData = MessageResponseData.builder()
-                .sender(message.getSender().getName())
+                .sender(memberMessage.getSender().getName())
                 .content(message.getContent())
                 .time(message.getCreatedAt())
                 .build();
@@ -74,16 +75,15 @@ public class MessageService {
             .forEach(recipient -> {
                 Message newMessage = Message.builder()
                         .content(writeMessageDto.getContent())
-                        .sender(sender)
-                        .recipient(recipient)
                         .readMessage(false)
+                        .originMessage("First Message")
                         .build();
                 messageRepository.save(newMessage);
 
                 MemberMessage memberMessage = MemberMessage.builder()
                         .message(newMessage)
-                        .member(recipient)
-                        .chat(newMessage.getId())
+                        .sender(sender)
+                        .recipient(recipient)
                         .build();
                 memberMessageRepository.save(memberMessage);
             });
@@ -92,8 +92,8 @@ public class MessageService {
     //메시지 수정
     public void updateMessageById(Member sender, UpdateMessageDto updateMessageDto, UUID id){
         existsMessage(id);  //ID에 해당하는 메시지가 존재하는지
-        checkSender(sender, id);    //발신자와 메시지가 일치하는지
         Message message = messageRepository.findMessageById(id);
+        checkSender(sender, message);    //발신자와 메시지가 일치하는지
         if(!message.isReadMessage()){
             //메시지를 읽지 않았을 경우
             Message updateMessage = messageRepository.findMessageById(id);
@@ -106,8 +106,8 @@ public class MessageService {
     //메시지 삭제 - 발신자가 삭제
     public void deleteMessageBySender(Member sender, UUID id){
         existsMessage(id);  //ID에 해당하는 메시지가 존재하는지
-        checkSender(sender, id);    //발신자와 메시지가 일치하는지
         Message message = messageRepository.findMessageById(id);
+        checkSender(sender, message);    //발신자와 메시지가 일치하는지
         if(!message.isReadMessage()) {
             //메시지를 읽지 않았을 경우
             messageRepository.deleteById(id);
@@ -118,27 +118,28 @@ public class MessageService {
     //메시지 삭제 - 수신자가 삭제
     public void deleteMessageByRecipient(Member recipient, UUID id){
         existsMessage(id);  //ID에 해당하는 메시지가 존재하는지
-        checkRecipient(recipient, id);  //수신자와 메시지가 일치하는지
+        Message message = messageRepository.findMessageById(id);
+        checkRecipient(recipient, message);  //수신자와 메시지가 일치하는지
         messageRepository.deleteById(id);
     }
 
     //답장 작성
     public void writeComment(Member sender, CommentDto commentDto, UUID id){
         existsMessage(id);  //ID에 해당하는 메시지가 존재하는지
-        checkRecipient(sender,id);  //답장 작성자가 해당 메시지 수신자인지
-        Message chat = messageRepository.findMessageById(id);   //답장을 보낼 메시지 원본
+        Message originalMessage = messageRepository.findMessageById(id);   //답장을 보낼 메시지 원본
+        checkRecipient(sender, originalMessage);  //답장 작성자가 해당 메시지 수신자인지
+        MemberMessage originalMemberMessage = memberMessageRepository.findMemberMessageByMessage(originalMessage);
         Message comment = Message.builder()
                 .content(commentDto.getContent())
-                .sender(sender)
-                .recipient(chat.getSender())    //메시지 원본의 발신자가 답장의 수신자가 됨
+                .originMessage(originalMessage.getId().toString())
                 .readMessage(false)
                 .build();
         messageRepository.save(comment);
 
         MemberMessage memberMessage = MemberMessage.builder()
                 .message(comment)
-                .member(chat.getSender())
-                .chat(chat.getId())
+                .sender(sender)
+                .recipient(originalMemberMessage.getSender())   //메시지 원본의 발신자가 답장의 수신자가 됨
                 .build();
         memberMessageRepository.save(memberMessage);
     }
@@ -160,16 +161,16 @@ public class MessageService {
     }
 
     //메시지 발신자가 맞는지 확인하기
-    public boolean checkSender(Member sender, UUID id){
-        if(messageRepository.existsBySenderAndId(sender, id)){
+    public boolean checkSender(Member sender, Message message){
+        if(memberMessageRepository.existsBySenderAndMessage(sender, message)){
             return true;
         }
         throw new ForbiddenException(ErrorCode.NO_ACCESS,"메시지 접근 권한이 없습니다.");
     }
 
     //메시지 수신자가 맞는지 확인하기
-    public boolean checkRecipient(Member recipient, UUID id){
-        if(messageRepository.existsByRecipientAndId(recipient, id)){
+    public boolean checkRecipient(Member recipient, Message message){
+        if(memberMessageRepository.existsByRecipientAndMessage(recipient, message)){
             return true;
         }
         throw new ForbiddenException(ErrorCode.NO_ACCESS,"메시지 접근 권한이 없습니다.");
